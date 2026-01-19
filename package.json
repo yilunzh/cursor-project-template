@@ -1,0 +1,12 @@
+{
+  "name": "cursor-project-template",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Project template for AI-assisted development with Cursor",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0"
+  }
+}

@@ -1,0 +1,103 @@
+---
+description: "Core development workflow for AI-assisted development"
+alwaysApply: true
+---
+
+# Development Workflow
+
+## Project Overview
+
+See `BRIEF.md` for the project description and `docs/SPEC.md` for the technical specification.
+
+## Phase 0: BRANCH FIRST (Feature Branches Required)
+
+Before making ANY changes:
+
+1. **Check current branch**: `git branch --show-current`
+2. **For new features**: Create feature branch
+   ```bash
+   git checkout -b feature/<feature-name>
+   ```
+3. **For bug fixes**: Create fix branch
+   ```bash
+   git checkout -b fix/<bug-description>
+   ```
+4. **NEVER commit directly to main** - All changes go through branches → PR
+
+Only small, trivial changes (typo fixes, config tweaks) can go directly to main.
+
+## Phase 1: CLARIFY FIRST (Ask Questions Before Coding)
+
+Before writing ANY implementation code, you MUST:
+
+1. **Read related code** - Understand existing patterns
+2. **Ask clarifying questions** about:
+   - Ambiguous requirements ("Should X also handle Y?")
+   - User-facing text (error messages, labels)
+   - Edge cases ("What happens if Z?")
+   - Scope boundaries ("Does this include W?")
+3. **Wait for answers** - Do NOT assume. Wrong assumptions = rework.
+
+**For features with UI**, also clarify:
+- Design inspiration (sites/apps to emulate)
+- Visual style (modern, minimal, playful, etc.)
+- Component library preference (if any)
+- Key screens/interactions to get right
+
+## Phase 2: PLAN (Create Implementation Plan)
+
+After clarification, outline:
+- Implementation steps
+- Test steps (which tests to update/add)
+- Verification step ("Run tests, confirm passing")
+
+## Phase 3: IMPLEMENT (Autonomous Execution)
+
+Now proceed WITHOUT asking for confirmation:
+1. Make incremental changes
+2. Run related tests after each change
+3. Fix failures immediately
+4. Continue to next step
+
+## Phase 4: VERIFY (Before Claiming Done)
+
+Before saying "done":
+1. Run tests - all must pass
+2. If user-facing changes: present options for review
+3. For UI changes: verify pages load correctly
+
+## Decision Guidelines
+
+### ESCALATE (Ask User)
+- User-facing changes (UI, messages, outputs)
+- API contracts and data formats
+- Error messages and notifications
+- Visual design decisions
+- Security-sensitive changes
+- Breaking changes
+
+### AUTONOMOUS (Just Do It)
+- Internal refactoring
+- Bug fixes with clear solutions
+- Test improvements
+- Performance optimizations
+- Code organization
+
+## Quality Guidelines
+
+1. **Don't add CI checks the codebase doesn't pass** - Verify existing code passes before adding new checks
+2. **Test locally before committing** - Run tests and lint
+3. **Keep PRs small and focused** - One logical change per PR when possible
+
+## Reference Documentation
+
+- `BRIEF.md` - Initial project description (non-technical)
+- `docs/SPEC.md` - Technical specification (grows with project)
+- `docs/PATTERNS.md` - Architectural patterns reference
+
+## SPEC.md Updates
+
+After completing a feature, update `docs/SPEC.md`:
+- Add feature to "Implemented" section
+- Document key architectural decisions
+- Update "Current State" as needed
