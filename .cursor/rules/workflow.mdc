@@ -26,6 +26,13 @@ Before making ANY changes:
 
 Only small, trivial changes (typo fixes, config tweaks) can go directly to main.
 
+### Merge Requirements
+
+Before merging any PR:
+1. All CI checks must pass
+2. Wait for checks to complete — do NOT merge while checks are "in progress"
+3. If CI fails — fix issues in the branch, push, wait for CI again
+
 ## Phase 1: CLARIFY FIRST (Ask Questions Before Coding)
 
 Before writing ANY implementation code, you MUST:
@@ -66,6 +73,20 @@ Before saying "done":
 2. If user-facing changes: present options for review
 3. For UI changes: verify pages load correctly
 
+### Verification Efficiency
+
+- **Define "done" upfront**: Before starting, identify what verification is needed. Once met, stop.
+- **Trust existing tests**: If a relevant test passes, that's sufficient. Don't duplicate.
+- **One verification path**: Choose either existing test OR manual check. Not both.
+- **Don't over-verify**: More verification does not equal better. Sufficient verification = done.
+
+### Playwright Verification (UI Changes)
+
+For UI changes, use Playwright MCP to verify:
+1. Use `browser_navigate` to visit affected pages
+2. Use `browser_snapshot` to verify pages load correctly
+3. Compare against design inspiration/expectations
+
 ## Decision Guidelines
 
 ### ESCALATE (Ask User)
@@ -83,11 +104,12 @@ Before saying "done":
 - Performance optimizations
 - Code organization
 
-## Quality Guidelines
+## CI & Quality Guidelines
 
 1. **Don't add CI checks the codebase doesn't pass** - Verify existing code passes before adding new checks
 2. **Test locally before committing** - Run tests and lint
-3. **Keep PRs small and focused** - One logical change per PR when possible
+3. **Align local hooks with CI** - Pre-commit hook and CI should run the same checks
+4. **Keep PRs small and focused** - One logical change per PR when possible
 
 ## Reference Documentation
 
@@ -97,7 +119,27 @@ Before saying "done":
 
 ## SPEC.md Updates
 
-After completing a feature, update `docs/SPEC.md`:
-- Add feature to "Implemented" section
-- Document key architectural decisions
-- Update "Current State" as needed
+After completing a feature, update `docs/SPEC.md`. Trigger phrases:
+- "feature complete", "update spec", "update documentation"
+- "spec update", "document this feature"
+
+**Update workflow:**
+1. Review recent git changes (`git diff`, `git log`) to understand what was built
+2. Update the relevant sections of `docs/SPEC.md`:
+   - Add feature to "Implemented" section
+   - Document key architectural decisions
+   - Update "Current State" as needed
+   - Add new entries to "Version History" table
+3. Commit the SPEC update to the current branch
+
+## Quality Enforcement
+
+This project enforces quality through multiple mechanisms:
+
+| Mechanism | Type | Purpose |
+|-----------|------|---------|
+| `context-management.mdc` | Always-applied rule | Session checkpoints, handoff, completion checks |
+| `workflow.mdc` | Always-applied rule | Development workflow, branching, verification |
+| `test-first.mdc` | Description-triggered rule | TDD workflow for new features |
+| `design-review.mdc` | Description-triggered rule | UI/UX design review framework |
+| `.husky/pre-commit` | Git hook | Tests + lint before commit, blocks main branch commits |

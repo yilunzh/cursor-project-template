@@ -11,12 +11,11 @@ NC='\033[0m' # No Color
 # Check if committing to main branch
 BRANCH=$(git branch --show-current)
 if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
-    echo "${YELLOW}WARNING: You are committing directly to $BRANCH${NC}"
-    echo "Consider using a feature branch instead:"
+    echo "${RED}ERROR: Direct commits to $BRANCH are not allowed${NC}"
+    echo "Create a feature branch instead:"
     echo "  git checkout -b feature/<feature-name>"
     echo ""
-    # Allow but warn - remove 'exit 1' comment below to block
-    # exit 1
+    exit 1
 fi
 
 # Detect and run linter

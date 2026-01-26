@@ -7,7 +7,10 @@ A **framework-agnostic** template for AI-assisted development with Cursor. Captu
 This template provides:
 
 - **Development workflow** - Branch-first, clarify, plan, implement, verify
-- **Quality enforcement** - Git hooks (Husky) for tests and linting
+- **Quality enforcement** - Git hooks (Husky) for tests and linting, branch protection
+- **Context management** - Session checkpoints, handoff between sessions
+- **TDD workflow** - Test-first development rule for new features
+- **Design review** - UI/UX review framework with three-level analysis
 - **Pattern documentation** - Reference for common architectural decisions
 - **MCP integration** - Playwright for visual verification
 
@@ -71,18 +74,21 @@ The AI will:
 cursor-project-template/
 ├── .cursor/
 │   ├── rules/
-│   │   └── workflow.mdc       # Development workflow rules (always applied)
-│   └── mcp.json               # MCP server configuration (Playwright)
+│   │   ├── workflow.mdc             # Core workflow (always applied)
+│   │   ├── context-management.mdc   # Checkpoints & handoff (always applied)
+│   │   ├── test-first.mdc           # TDD workflow (description-triggered)
+│   │   └── design-review.mdc        # UI/UX review (description-triggered)
+│   └── mcp.json                     # MCP server configuration (Playwright)
 ├── .husky/
-│   └── pre-commit             # Git hook: tests + lint before commit
-├── AGENTS.md                  # AI instructions (readable by any AI tool)
-├── BRIEF.md                   # Project description (you edit this)
+│   └── pre-commit                   # Git hook: tests + lint, blocks main commits
+├── AGENTS.md                        # AI instructions (readable by any AI tool)
+├── BRIEF.md                         # Project description (you edit this)
 ├── docs/
-│   ├── SPEC.md                # Technical spec (grows with project)
-│   └── PATTERNS.md            # Architectural patterns reference
-├── package.json               # For Husky (Git hooks)
-├── .gitignore                 # Multi-language patterns
-└── README.md                  # This file
+│   ├── SPEC.md                      # Technical spec (grows with project)
+│   └── PATTERNS.md                  # Architectural patterns reference
+├── package.json                     # For Husky (Git hooks)
+├── .gitignore                       # Multi-language patterns
+└── README.md                        # This file
 ```
 
 ## Git Hooks (Husky)
@@ -91,7 +97,7 @@ The template uses Husky for quality enforcement:
 
 | Hook | Purpose |
 |------|---------|
-| `pre-commit` | Runs tests + lint, warns about main branch commits |
+| `pre-commit` | Runs tests + lint, **blocks** direct commits to main branch |
 
 ### Language Detection
 
@@ -120,9 +126,14 @@ npm install  # Installs Husky and sets up hooks
 
 ## Cursor Rules
 
-The template uses Cursor's `.cursor/rules/` system:
+The template uses Cursor's `.cursor/rules/` system with four rule files:
 
-- `workflow.mdc` - Always-applied workflow rules
+| Rule | Trigger | Purpose |
+|------|---------|---------|
+| `workflow.mdc` | Always applied | Core development workflow, branching, merge requirements, verification efficiency |
+| `context-management.mdc` | Always applied | Session start checks, context checkpoints every 3-5 edits, session handoff, completion checklist |
+| `test-first.mdc` | Description-triggered | TDD workflow: write failing tests → implement → verify. Activates on "add/implement/create feature" |
+| `design-review.mdc` | Description-triggered | Three-level UI/UX review framework with accessibility checks. Activates on "design review", "review UI" |
 
 ### Rule Types (for customization)
 
@@ -194,10 +205,14 @@ This template is adapted from [claude-project-template](../claude-project-templa
 | Project instructions | `CLAUDE.md` | `.cursor/rules/*.mdc` + `AGENTS.md` |
 | MCP servers | `.claude/settings.json` | `.cursor/mcp.json` |
 | Pre-commit checks | Claude hooks (AI-aware) | Git hooks (Husky) |
-| Blocking hooks | Yes | No (Git hooks only) |
-| Context checkpoints | Built-in reminders | Manual |
+| Branch protection | Blocking hook | Blocking Git hook (`exit 1`) |
+| Context checkpoints | Hook-driven reminders | Always-applied rule |
+| Session handoff | Blocking hook | Always-applied rule |
+| TDD agent | `.claude/agents/test-first.md` | `.cursor/rules/test-first.mdc` |
+| Design review agent | `.claude/agents/design-review.md` | `.cursor/rules/design-review.mdc` |
+| SPEC.md update triggers | Hook-driven | Rule-driven (trigger phrases) |
 
-**Key difference**: Cursor doesn't have Claude Code's hook system. This template uses traditional Git hooks (Husky) as a fallback, which work but aren't AI-aware.
+**Key difference**: Cursor doesn't have Claude Code's hook system. This template converts hook-driven workflows into Cursor rules (`.cursor/rules/*.mdc`) and uses traditional Git hooks (Husky) for commit-time enforcement.
 
 ## License
 

@@ -1,0 +1,64 @@
+---
+description: "Context management: session start checks, checkpoints, handoff, and completion verification"
+alwaysApply: true
+---
+
+# Context Management
+
+## Session Start: Check for Uncommitted Changes
+
+At the start of every session, run `git status` to check for uncommitted changes. If uncommitted changes exist:
+
+1. **Warn the user**: "There are uncommitted changes from a previous session."
+2. **List changed files** with a brief summary
+3. **Suggest next steps**: commit, stash, or continue working on them
+
+Also check for `.cursor/handoff.md` — if it exists, offer to resume from it:
+> "Found a handoff from a previous session. Say **continue from handoff** to resume."
+
+## Context Checkpoints
+
+**Every 3-5 major code edits**, update `.cursor/session-context.md` with:
+
+```markdown
+## Current Goal
+What we're trying to accomplish
+
+## Decisions Made
+- Key choice 1 and rationale
+- Key choice 2 and rationale
+
+## Files Modified
+- file1.py - what changed
+- file2.html - what changed
+
+## What's Next
+- Remaining step 1
+- Remaining step 2
+```
+
+**Rules:**
+- All four sections are required
+- Update proactively — don't wait to be asked
+- After updating, briefly confirm: "Context checkpoint saved."
+
+## Session Handoff
+
+Before ending a session with incomplete work, write `.cursor/handoff.md` with the same four sections (Current Goal, Decisions Made, Files Modified, What's Next).
+
+**When to write a handoff:**
+- User says "stop", "that's all", "done for now", or similar
+- Work is clearly incomplete (failing tests, partial implementation)
+- User is switching to a different task
+
+**Resuming:** When the user says "continue from handoff", read `.cursor/handoff.md` and pick up where the previous session left off. Delete the handoff file after resuming.
+
+## Completion Checklist
+
+Before declaring any task "done":
+
+1. **Tests have been run** and are passing
+2. **Lint has been run** (if configured) and passes
+3. **Changes are committed** to the feature branch (or user has been reminded to commit)
+
+Do not say "done" or "complete" if tests haven't been executed in the current session.
