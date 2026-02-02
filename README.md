@@ -275,6 +275,30 @@ After the AI scaffolds your project:
 - Add project-specific entries to `.gitignore`
 - Create project-specific rules in `.cursor/rules/`
 
+## Syncing Improvements from Projects
+
+As you work on projects, you may discover workflow improvements (new hooks, refined rules, better processes). To propagate these back to the templates:
+
+1. Open the project in Claude Code (or Cursor with Claude)
+2. Ask: "analyze this project for template improvements" or "sync improvements to templates"
+3. Claude will:
+   - Compare your project's rules, hooks, and agents against the templates
+   - Identify improvements worth propagating
+   - Create PRs to update both `claude-project-template` and `cursor-project-template`
+
+No manual logging required - Claude analyzes the diffs on demand.
+
+**What gets synced:**
+- Workflow improvements in AGENTS.md or rules
+- New or improved hooks
+- New rules or agents
+- Process documentation updates
+
+**What stays project-specific:**
+- BRIEF.md content
+- docs/SPEC.md content
+- Project-specific rules tied to your tech stack
+
 ## Comparison with Claude Code Template
 
 This template is adapted from [claude-project-template](../claude-project-template) for Cursor users.
