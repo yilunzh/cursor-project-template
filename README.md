@@ -279,25 +279,26 @@ After the AI scaffolds your project:
 
 As you work on projects, you may discover workflow improvements (new hooks, refined rules, better processes). To propagate these back to the templates:
 
-1. Open the project in Claude Code (or Cursor with Claude)
-2. Ask: "analyze this project for template improvements" or "sync improvements to templates"
+1. Open the project in Claude Code
+2. Run `/sync-templates` or ask "analyze this project for template improvements"
 3. Claude will:
    - Compare your project's rules, hooks, and agents against the templates
-   - Identify improvements worth propagating
-   - Create PRs to update both `claude-project-template` and `cursor-project-template`
+   - Evaluate each difference for generalizability and value
+   - Recommend which improvements should become part of the default templates
+   - Apply approved changes to both `claude-project-template` and `cursor-project-template`
 
-No manual logging required - Claude analyzes the diffs on demand.
+No manual logging required - Claude analyzes on demand and you decide what to adopt.
 
-**What gets synced:**
-- Workflow improvements in AGENTS.md or rules
+**What might get synced:**
+- Workflow patterns that proved useful
 - New or improved hooks
-- New rules or agents
-- Process documentation updates
+- Broadly applicable rules or agents
+- Process documentation refinements
 
 **What stays project-specific:**
 - BRIEF.md content
 - docs/SPEC.md content
-- Project-specific rules tied to your tech stack
+- Tech-stack-specific rules
 
 ## Comparison with Claude Code Template
 
