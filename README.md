@@ -185,6 +185,7 @@ The template uses Cursor's `.cursor/rules/` system:
 | `commit-push-pr.mdc` | Description-triggered | Complete workflow from staged changes to PR creation. Activates on "commit and PR", "create PR" |
 | `test-and-commit.mdc` | Description-triggered | Run tests first, only commit if they pass. Activates on "test and commit" |
 | `web-verify.mdc` | Description-triggered | Playwright verification for web routes. Activates on "verify routes", "check pages" |
+| `sync-templates.mdc` | Description-triggered | Analyze project for template improvements. Activates on "sync templates", "template improvements" |
 
 ### Rule Types (for customization)
 
