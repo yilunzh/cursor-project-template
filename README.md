@@ -7,10 +7,12 @@ A **framework-agnostic** template for AI-assisted development with Cursor. Captu
 This template provides:
 
 - **Development workflow** - Branch-first, clarify, plan, implement, verify
-- **Quality enforcement** - Git hooks (Husky) for tests and linting, branch protection
+- **Quality enforcement** - Git hooks (Husky) + Cursor CLI hooks for tests and linting
 - **Context management** - Session checkpoints, handoff between sessions
 - **TDD workflow** - Test-first development rule for new features
 - **Design review** - UI/UX review framework with three-level analysis
+- **Ideation process** - Structured workflow from idea to implementation plan
+- **Auto-formatting** - Automatic code formatting after edits
 - **Pattern documentation** - Reference for common architectural decisions
 - **MCP integration** - Playwright for visual verification
 
@@ -77,7 +79,16 @@ cursor-project-template/
 │   │   ├── workflow.mdc             # Core workflow (always applied)
 │   │   ├── context-management.mdc   # Checkpoints & handoff (always applied)
 │   │   ├── test-first.mdc           # TDD workflow (description-triggered)
-│   │   └── design-review.mdc        # UI/UX review (description-triggered)
+│   │   ├── design-review.mdc        # UI/UX review (description-triggered)
+│   │   ├── commit-push-pr.mdc       # Commit and PR workflow (description-triggered)
+│   │   ├── test-and-commit.mdc      # Test-first commit (description-triggered)
+│   │   └── web-verify.mdc           # Playwright verification (description-triggered)
+│   ├── hooks/
+│   │   ├── auto-format.py           # Auto-format Python files after edits
+│   │   └── implementation-plan-check.py  # Remind to update implementation plans
+│   ├── hooks.json                   # Cursor CLI hooks configuration
+│   ├── ideation/
+│   │   └── IDEATION_PROCESS.md      # Ideation workflow documentation
 │   └── mcp.json                     # MCP server configuration (Playwright)
 ├── .husky/
 │   └── pre-commit                   # Git hook: tests + lint, blocks main commits
@@ -93,7 +104,7 @@ cursor-project-template/
 
 ## Git Hooks (Husky)
 
-The template uses Husky for quality enforcement:
+The template uses Husky for quality enforcement at commit time:
 
 | Hook | Purpose |
 |------|---------|
@@ -116,6 +127,24 @@ After cloning:
 npm install  # Installs Husky and sets up hooks
 ```
 
+## Cursor CLI Hooks
+
+The template also uses Cursor's native hooks system (`.cursor/hooks.json`) for AI-aware automation:
+
+| Hook | Trigger | Purpose |
+|------|---------|---------|
+| `auto-format.py` | After file edit | Auto-format Python files with black/isort |
+| `implementation-plan-check.py` | Pre-commit, session end | Remind to update implementation plans for features with ideation docs |
+
+### How Cursor Hooks Work
+
+Cursor CLI hooks run automatically during AI interactions:
+- `afterFileEdit`: Runs after the AI edits any file
+- `preToolUse`: Runs before specific tools (e.g., Shell for commits)
+- `stop`: Runs when the AI session ends
+
+Hook scripts receive environment variables like `CURSOR_FILE_PATH` and `CURSOR_PROJECT_DIR`.
+
 ## Development Workflow
 
 1. **BRANCH FIRST** - Create feature branch before any changes
@@ -124,9 +153,28 @@ npm install  # Installs Husky and sets up hooks
 4. **IMPLEMENT** - Make incremental changes, run tests frequently
 5. **VERIFY** - Run tests, use Playwright for UI changes
 
+## Ideation Process
+
+For complex features, use the structured ideation workflow before implementation:
+
+```
+.cursor/ideation/<project-slug>/
+├── discovery.md           # Problem space, users, insights
+├── requirements.md        # Scope, user stories, success criteria
+├── design-language.md     # Visual/interaction principles
+├── architecture.md        # Technical approach
+├── implementation-plan.md # Epics, stories, acceptance criteria
+└── prototypes/            # HTML/CSS prototypes
+```
+
+To start ideation:
+> "Let's ideate on [your concept]"
+
+See `.cursor/ideation/IDEATION_PROCESS.md` for the full workflow.
+
 ## Cursor Rules
 
-The template uses Cursor's `.cursor/rules/` system with four rule files:
+The template uses Cursor's `.cursor/rules/` system:
 
 | Rule | Trigger | Purpose |
 |------|---------|---------|
@@ -134,6 +182,9 @@ The template uses Cursor's `.cursor/rules/` system with four rule files:
 | `context-management.mdc` | Always applied | Session start checks, context checkpoints every 3-5 edits, session handoff, completion checklist |
 | `test-first.mdc` | Description-triggered | TDD workflow: write failing tests → implement → verify. Activates on "add/implement/create feature" |
 | `design-review.mdc` | Description-triggered | Three-level UI/UX review framework with accessibility checks. Activates on "design review", "review UI" |
+| `commit-push-pr.mdc` | Description-triggered | Complete workflow from staged changes to PR creation. Activates on "commit and PR", "create PR" |
+| `test-and-commit.mdc` | Description-triggered | Run tests first, only commit if they pass. Activates on "test and commit" |
+| `web-verify.mdc` | Description-triggered | Playwright verification for web routes. Activates on "verify routes", "check pages" |
 
 ### Rule Types (for customization)
 
@@ -185,6 +236,34 @@ globs: ["*.py"]
 Instructions for the AI go here.
 ```
 
+### Adding Custom Hooks
+
+Create `.cursor/hooks/your-hook.py`:
+
+```python
+#!/usr/bin/env python3
+import json
+import os
+
+def main():
+    file_path = os.environ.get("CURSOR_FILE_PATH", "")
+    # Your logic here
+    return {"continue": True, "message": "Optional message"}
+
+if __name__ == "__main__":
+    print(json.dumps(main()))
+```
+
+Then register in `.cursor/hooks.json`:
+
+```json
+{
+  "afterFileEdit": [
+    {"command": "python3 .cursor/hooks/your-hook.py", "timeout": 30}
+  ]
+}
+```
+
 ### Adding Patterns
 
 Update `docs/PATTERNS.md` with patterns you learn and want to reuse.
@@ -204,15 +283,18 @@ This template is adapted from [claude-project-template](../claude-project-templa
 |---------|-------------|--------|
 | Project instructions | `CLAUDE.md` | `.cursor/rules/*.mdc` + `AGENTS.md` |
 | MCP servers | `.claude/settings.json` | `.cursor/mcp.json` |
-| Pre-commit checks | Claude hooks (AI-aware) | Git hooks (Husky) |
+| AI-aware hooks | `.claude/settings.json` hooks | `.cursor/hooks.json` |
+| Pre-commit checks | Claude hooks (AI-aware) | Git hooks (Husky) + Cursor hooks |
 | Branch protection | Blocking hook | Blocking Git hook (`exit 1`) |
 | Context checkpoints | Hook-driven reminders | Always-applied rule |
 | Session handoff | Blocking hook | Always-applied rule |
 | TDD agent | `.claude/agents/test-first.md` | `.cursor/rules/test-first.mdc` |
 | Design review agent | `.claude/agents/design-review.md` | `.cursor/rules/design-review.mdc` |
+| Ideation process | `.claude/ideation/` | `.cursor/ideation/` |
+| Auto-format | afterFileEdit hook | afterFileEdit hook |
 | SPEC.md update triggers | Hook-driven | Rule-driven (trigger phrases) |
 
-**Key difference**: Cursor doesn't have Claude Code's hook system. This template converts hook-driven workflows into Cursor rules (`.cursor/rules/*.mdc`) and uses traditional Git hooks (Husky) for commit-time enforcement.
+**Key difference**: Cursor now supports a native hooks system similar to Claude Code. This template uses both Cursor hooks (for AI-aware automation) and traditional Git hooks (Husky) for commit-time enforcement.
 
 ## License
 
