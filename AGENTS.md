@@ -91,6 +91,43 @@ Before claiming done:
 - **One verification path**: Choose either existing test OR manual check. Not both.
 - **Don't over-verify**: Sufficient verification = done.
 
+## Ideation Process
+
+For complex features, use the structured ideation workflow before diving into implementation.
+
+**When to use ideation:**
+- New feature with unclear requirements
+- Features involving significant UI/UX decisions
+- Major architectural changes
+- Any work that would benefit from upfront design
+
+**Start with:** "Let's ideate on [concept]"
+
+**Workflow phases:**
+1. Problem Discovery - understand WHY
+2. Solution Definition - define WHAT
+3. Design Discovery - establish visual language
+4. Design Specification - detail HOW it looks
+5. Architecture - define HOW it's built
+6. Implementation Planning - create roadmap
+7. Handoff - package for implementation
+
+**Artifacts live in:** `.cursor/ideation/<project-slug>/`
+
+See `.cursor/ideation/IDEATION_PROCESS.md` for the full workflow.
+
+### Implementation Plan Updates
+
+When working on features with implementation plans in `.cursor/ideation/`:
+
+**Update the plan when:**
+- Completing a story (mark checkboxes as done)
+- Completing an epic (update Progress Summary table)
+- Making scope changes (add notes)
+- At session end (update status and last modified date)
+
+The `implementation-plan-check.py` hook will remind you if you modify code for a feature with an implementation plan but haven't updated the plan.
+
 ## Decision Guidelines
 
 ### Ask User First
@@ -113,8 +150,9 @@ Before claiming done:
 This project uses multiple quality mechanisms:
 
 - **Git hooks (Husky)**: Pre-commit hook runs tests and lint before each commit
+- **Cursor CLI hooks**: Auto-format after edits, implementation plan reminders
 - **Branch protection**: Pre-commit hook blocks direct commits to main branch
-- **Language-agnostic**: Hook auto-detects Python, Node.js, Rust, Go
+- **Language-agnostic**: Hooks auto-detect Python, Node.js, Rust, Go
 - **Cursor rules**: `.cursor/rules/` contains workflow, context management, TDD, and design review rules
 
 To set up hooks after cloning:
@@ -142,6 +180,7 @@ After completing a feature, update `docs/SPEC.md`. Trigger phrases:
 - `BRIEF.md` - Project description (non-technical)
 - `docs/SPEC.md` - Technical specification
 - `docs/PATTERNS.md` - Architectural patterns reference
+- `.cursor/ideation/IDEATION_PROCESS.md` - Ideation workflow
 
 ## Cursor Rules
 
@@ -153,3 +192,17 @@ The `.cursor/rules/` directory contains AI-specific rules:
 | `context-management.mdc` | Always applied | Session checkpoints, handoff, completion checks |
 | `test-first.mdc` | Description-triggered | TDD workflow for new features |
 | `design-review.mdc` | Description-triggered | UI/UX design review framework |
+| `commit-push-pr.mdc` | Description-triggered | Commit, push, and create PR workflow |
+| `test-and-commit.mdc` | Description-triggered | Run tests then commit if passing |
+| `web-verify.mdc` | Description-triggered | Playwright route verification |
+
+## Cursor CLI Hooks
+
+The `.cursor/hooks/` directory contains hook scripts:
+
+| File | Trigger | Purpose |
+|------|---------|---------|
+| `auto-format.py` | After file edit | Auto-format Python files with black/isort |
+| `implementation-plan-check.py` | Pre-commit, session end | Remind to update implementation plans |
+
+Hooks are configured in `.cursor/hooks.json`.
