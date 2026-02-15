@@ -46,6 +46,8 @@ What we're trying to accomplish
 
 Before ending a session with incomplete work, write `.cursor/handoff.md` with the same four sections (Current Goal, Decisions Made, Files Modified, What's Next).
 
+**Before writing a handoff**, if memory MCP tools are available, call `learning_review()` to capture session learnings and present any proposals. Handle responses before ending.
+
 **When to write a handoff:**
 - User says "stop", "that's all", "done for now", or similar
 - Work is clearly incomplete (failing tests, partial implementation)

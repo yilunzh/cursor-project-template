@@ -43,6 +43,7 @@ Before writing ANY implementation code, you MUST:
    - User-facing text (error messages, labels)
    - Edge cases ("What happens if Z?")
    - Scope boundaries ("Does this include W?")
+   - For structural changes (moves, renames, convention changes), identify analogous items that need the same treatment before starting
 3. **Wait for answers** - Do NOT assume. Wrong assumptions = rework.
 
 **For features with UI**, also clarify:
@@ -58,6 +59,13 @@ After clarification, outline:
 - Test steps (which tests to update/add)
 - Verification step ("Run tests, confirm passing")
 
+## Pre-Implementation Checklist
+
+Before writing ANY implementation code in a session:
+
+1. **Verify branch**: Run `git branch --show-current` and confirm it matches the feature being built
+2. **Create branch if needed**: If on the wrong branch or main, create the correct feature branch first
+
 ## Phase 3: IMPLEMENT (Autonomous Execution)
 
 Now proceed WITHOUT asking for confirmation:
@@ -65,6 +73,17 @@ Now proceed WITHOUT asking for confirmation:
 2. Run related tests after each change
 3. Fix failures immediately
 4. Continue to next step
+
+## Phase 3b: POST-IMPLEMENTATION CHECK
+
+After completing implementation and before claiming done, run the post-implementation checklist (see `post-implementation.mdc`):
+
+1. **Doc alignment** -- verify rules/README/AGENTS.md still match the code
+2. **Dead code scan** -- check for functions defined but never called
+3. **Import consistency** -- no references to deleted/renamed modules
+4. **Gitignore compliance** -- no tracked files that should be ignored
+
+Fix any issues found before moving to verification.
 
 ## Phase 4: VERIFY (Before Claiming Done)
 
@@ -132,6 +151,22 @@ After completing a feature, update `docs/SPEC.md`. Trigger phrases:
    - Add new entries to "Version History" table
 3. Commit the SPEC update to the current branch
 
+## Post-Implementation (Mandatory)
+
+After completing all implementation stories and before claiming "done", run the post-implementation checklist (`post-implementation.mdc`) proactively. Do NOT wait for the user to ask. This includes: doc alignment, dead code scan, import consistency, and gitignore compliance.
+
+## Multi-Phase Execution
+
+When an implementation plan has multiple phases:
+
+1. Create ONE plan covering all phases with a single todo list
+2. Get user confirmation ONCE
+3. Execute sequentially -- mark todos in_progress/completed as you go
+4. At each phase boundary, run tests then immediately continue
+5. Do NOT switch to plan mode between phases
+6. Announce "Phase N complete (X tests pass). Continuing to Phase N+1." and keep going
+7. Only pause if tests fail -- fix before proceeding
+
 ## Quality Enforcement
 
 This project enforces quality through multiple mechanisms:
@@ -140,6 +175,9 @@ This project enforces quality through multiple mechanisms:
 |-----------|------|---------|
 | `context-management.mdc` | Always-applied rule | Session checkpoints, handoff, completion checks |
 | `workflow.mdc` | Always-applied rule | Development workflow, branching, verification |
+| `post-implementation.mdc` | Description-triggered rule | Doc alignment, dead code, import/gitignore checks after implementation |
+| `pre-pr-review.mdc` | Description-triggered rule | Self-review: security, defensive coding, consistency before PR |
 | `test-first.mdc` | Description-triggered rule | TDD workflow for new features |
 | `design-review.mdc` | Description-triggered rule | UI/UX design review framework |
-| `.husky/pre-commit` | Git hook | Tests + lint before commit, blocks main branch commits |
+| `memory.mdc` | Description-triggered rule | Agent memory capture, load, and learning review |
+| `.husky/pre-commit` | Git hook | Tests + lint + secrets check before commit, blocks main branch commits |

@@ -117,6 +117,40 @@ LINT_RESULT=$?
 run_tests
 TEST_RESULT=$?
 
+# Check for secrets in staged files
+check_secrets() {
+    STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+    if [ -z "$STAGED_FILES" ]; then
+        return 0
+    fi
+
+    echo "Checking for secrets..."
+
+    # Check for common token patterns (high confidence -- block)
+    # AWS keys (AKIA + 16 chars)
+    if echo "$STAGED_FILES" | xargs grep -l -E 'AKIA[A-Z0-9]{16}' 2>/dev/null; then
+        echo "${RED}ERROR: Possible AWS access key found in staged files.${NC}"
+        return 1
+    fi
+
+    # GitHub tokens (ghp_, gho_, ghs_, ghr_ + 36 chars)
+    if echo "$STAGED_FILES" | xargs grep -l -E 'gh[pors]_[A-Za-z0-9]{36}' 2>/dev/null; then
+        echo "${RED}ERROR: Possible GitHub token found in staged files.${NC}"
+        return 1
+    fi
+
+    # Generic secret patterns in code/config files (warning only)
+    SENSITIVE_FILES=$(echo "$STAGED_FILES" | grep -E '\.(yaml|yml|py|sh|json|toml|env|cfg|ini)$' || true)
+    if [ -n "$SENSITIVE_FILES" ]; then
+        if echo "$SENSITIVE_FILES" | xargs grep -l -E '(password|secret|token|api_key)\s*[:=]\s*["\x27][^"\x27]{8,}' 2>/dev/null; then
+            echo "${YELLOW}WARNING: Possible secret value found in staged files. Review before committing.${NC}"
+            # Warning only, don't block
+        fi
+    fi
+
+    return 0
+}
+
 # Report results
 if [ $LINT_RESULT -ne 0 ]; then
     echo ""
@@ -129,6 +163,15 @@ if [ $TEST_RESULT -ne 0 ]; then
     echo ""
     echo "${RED}Tests failed!${NC}"
     echo "Fix failing tests before committing."
+    exit 1
+fi
+
+check_secrets
+SECRETS_RESULT=$?
+if [ $SECRETS_RESULT -ne 0 ]; then
+    echo ""
+    echo "${RED}Secrets check failed!${NC}"
+    echo "Remove secrets from staged files before committing."
     exit 1
 fi
 

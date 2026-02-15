@@ -80,6 +80,13 @@ Thumbs.db
 .cursorignore
 .cursor/session-context.md
 .cursor/handoff.md
+.cursor/mcp.json
+
+# Agent Memory (personal, not shared)
+.cursor/memory/corrections/*.yaml
+.cursor/memory/preferences/*.yaml
+.cursor/memory/patterns/*.yaml
+.cursor/memory/reflections/*.md
 
 # Logs
 logs/

@@ -1,0 +1,90 @@
+---
+description: "Post-implementation quality check. Activates on: 'verify', 'check quality', 'are we done', or after completing a feature implementation."
+alwaysApply: false
+---
+
+# Post-Implementation Quality Check
+
+After completing a feature implementation (and before claiming "done"), run through this checklist. This catches issues that tests alone miss: stale documentation, dead code, and structural inconsistencies.
+
+## Checklist
+
+### 1. Doc Alignment
+
+For each source file changed in this session, check if any of these reference it:
+- `.cursor/rules/*.mdc`
+- `AGENTS.md`
+- `README.md`
+
+If a reference exists, **verify the description still matches the actual code behavior**. Common mismatches:
+- Rule says tool "handles X" but tool was simplified or renamed
+- README lists features that were removed or changed
+- AGENTS.md describes workflows that no longer exist
+
+**Fix any stale references before moving on.**
+
+### 2. Dead Code Scan
+
+For each function defined in changed files, check if it's imported/called anywhere:
+
+```bash
+# Quick check: find functions defined but never imported
+grep -r "def function_name" src/
+grep -r "function_name" src/ --include="*.py" | grep -v "def function_name"
+```
+
+If a function was defined for a flow that was later simplified or removed, **delete it**.
+
+### 3. Import Consistency
+
+Check that no files import from deleted or renamed modules:
+
+```bash
+# Find imports referencing old/deleted module names
+grep -r "from old_module" src/
+```
+
+If found, **update the imports** to point to the correct module.
+
+### 4. Gitignore Compliance
+
+Check if any files that should be gitignored are tracked:
+
+```bash
+# Files that should NOT be in git
+git ls-files .env .cursor/mcp.json
+git ls-files .cursor/memory/corrections/ .cursor/memory/preferences/
+```
+
+If any tracked files show up, **remove them from git tracking** (`git rm --cached`).
+
+## When to Run
+
+- After completing any feature implementation
+- After refactoring or renaming modules
+- After deleting files or functions
+- Before saying "done" or "complete"
+
+## Output
+
+Present findings as:
+```
+Post-implementation check:
+✓ Doc alignment: [N] references checked, all current
+✓ Dead code: no unused functions found
+✓ Imports: no stale imports
+✓ Gitignore: no tracked files that should be ignored
+
+Ready for testing and PR.
+```
+
+Or if issues found:
+```
+Post-implementation check:
+✗ Doc alignment: README.md line 42 says "supports X" but feature was removed
+✗ Dead code: utils.py:helper_func() defined but never called
+✓ Imports: OK
+✓ Gitignore: OK
+
+Fixing [N] issues before proceeding.
+```

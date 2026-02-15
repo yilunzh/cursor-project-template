@@ -7,14 +7,17 @@ A **framework-agnostic** template for AI-assisted development with Cursor. Captu
 This template provides:
 
 - **Development workflow** - Branch-first, clarify, plan, implement, verify
-- **Quality enforcement** - Git hooks (Husky) + Cursor CLI hooks for tests and linting
+- **Quality enforcement** - Git hooks (Husky) + Cursor CLI hooks for tests, linting, and secrets detection
 - **Context management** - Session checkpoints, handoff between sessions
+- **Self-improving memory** - Agent learns from corrections and promotes patterns to rules
+- **Post-implementation checks** - Doc alignment, dead code, import consistency
+- **Pre-PR self-review** - Security, defensive coding, and quality checks
 - **TDD workflow** - Test-first development rule for new features
 - **Design review** - UI/UX review framework with three-level analysis
 - **Ideation process** - Structured workflow from idea to implementation plan
 - **Auto-formatting** - Automatic code formatting after edits
 - **Pattern documentation** - Reference for common architectural decisions
-- **MCP integration** - Playwright for visual verification
+- **MCP integration** - Playwright for visual verification, Memory for behavioral learning
 
 ## What This Is NOT
 
@@ -78,6 +81,9 @@ cursor-project-template/
 │   ├── rules/
 │   │   ├── workflow.mdc             # Core workflow (always applied)
 │   │   ├── context-management.mdc   # Checkpoints & handoff (always applied)
+│   │   ├── post-implementation.mdc  # Quality check after implementation
+│   │   ├── pre-pr-review.mdc       # Self-review before PR
+│   │   ├── memory.mdc              # Agent memory behavior rules
 │   │   ├── test-first.mdc           # TDD workflow (description-triggered)
 │   │   ├── design-review.mdc        # UI/UX review (description-triggered)
 │   │   ├── commit-push-pr.mdc       # Commit and PR workflow (description-triggered)
@@ -85,18 +91,37 @@ cursor-project-template/
 │   │   └── web-verify.mdc           # Playwright verification (description-triggered)
 │   ├── hooks/
 │   │   ├── auto-format.py           # Auto-format Python files after edits
-│   │   └── implementation-plan-check.py  # Remind to update implementation plans
+│   │   ├── implementation-plan-check.py  # Remind to update implementation plans
+│   │   └── memory-flush.py          # Remind to capture session learnings
 │   ├── hooks.json                   # Cursor CLI hooks configuration
+│   ├── memory/                      # Agent behavioral memory (gitignored)
+│   │   ├── corrections/             # Corrections from user feedback
+│   │   ├── preferences/             # Workflow/output preferences
+│   │   ├── patterns/                # Detected patterns
+│   │   └── reflections/             # Session retros
 │   ├── ideation/
 │   │   └── IDEATION_PROCESS.md      # Ideation workflow documentation
-│   └── mcp.json                     # MCP server configuration (Playwright)
+│   ├── mcp.json.template            # MCP server config template
+│   └── mcp.json                     # MCP server configuration (generated, gitignored)
+├── src/
+│   └── memory_mcp/                  # Self-improving agent memory MCP server
+│       ├── server.py                # MCP server entry point (7 tools)
+│       └── tools/
+│           ├── _paths.py            # Path helpers
+│           ├── _registry.py         # Tool registry
+│           ├── _git_helpers.py      # Git utilities
+│           └── memory.py            # Memory capture, load, reinforce, review, apply
+├── tests/
+│   ├── conftest.py                  # Test fixtures
+│   └── test_memory.py              # Memory system tests (53 tests)
 ├── .husky/
-│   └── pre-commit                   # Git hook: tests + lint, blocks main commits
+│   └── pre-commit                   # Git hook: tests + lint + secrets, blocks main commits
 ├── AGENTS.md                        # AI instructions (readable by any AI tool)
 ├── BRIEF.md                         # Project description (you edit this)
 ├── docs/
 │   ├── SPEC.md                      # Technical spec (grows with project)
 │   └── PATTERNS.md                  # Architectural patterns reference
+├── pyproject.toml                   # Python package config (memory MCP server)
 ├── package.json                     # For Husky (Git hooks)
 ├── .gitignore                       # Multi-language patterns
 └── README.md                        # This file
@@ -108,7 +133,7 @@ The template uses Husky for quality enforcement at commit time:
 
 | Hook | Purpose |
 |------|---------|
-| `pre-commit` | Runs tests + lint, **blocks** direct commits to main branch |
+| `pre-commit` | Runs tests + lint + secrets check, **blocks** direct commits to main branch |
 
 ### Language Detection
 
@@ -135,6 +160,7 @@ The template also uses Cursor's native hooks system (`.cursor/hooks.json`) for A
 |------|---------|---------|
 | `auto-format.py` | After file edit | Auto-format Python files with black/isort |
 | `implementation-plan-check.py` | Pre-commit, session end | Remind to update implementation plans for features with ideation docs |
+| `memory-flush.py` | Session end | Remind to capture session learnings before ending |
 
 ### How Cursor Hooks Work
 
@@ -180,6 +206,9 @@ The template uses Cursor's `.cursor/rules/` system:
 |------|---------|---------|
 | `workflow.mdc` | Always applied | Core development workflow, branching, merge requirements, verification efficiency |
 | `context-management.mdc` | Always applied | Session start checks, context checkpoints every 3-5 edits, session handoff, completion checklist |
+| `post-implementation.mdc` | Description-triggered | Doc alignment, dead code, import consistency, gitignore compliance. Activates on "verify", "check quality" |
+| `pre-pr-review.mdc` | Description-triggered | Security, defensive coding, consistency review. Activates on "create PR", "push", "ready for review" |
+| `memory.mdc` | Description-triggered | Agent memory capture, load, and learning review. Activates when memory tools are available |
 | `test-first.mdc` | Description-triggered | TDD workflow: write failing tests → implement → verify. Activates on "add/implement/create feature" |
 | `design-review.mdc` | Description-triggered | Three-level UI/UX review framework with accessibility checks. Activates on "design review", "review UI" |
 | `commit-push-pr.mdc` | Description-triggered | Complete workflow from staged changes to PR creation. Activates on "commit and PR", "create PR" |
@@ -204,20 +233,36 @@ description: "Rules for React components"
 
 ## MCP Servers
 
-The template configures Playwright MCP for visual verification:
+The template configures two MCP servers via `.cursor/mcp.json.template`:
 
-```json
-{
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
-    }
-  }
-}
+| Server | Purpose |
+|--------|---------|
+| `playwright` | Visual verification -- screenshot and verify UI changes |
+| `memory` | Self-improving agent memory -- captures corrections, promotes patterns to rules |
+
+### Setup
+
+```bash
+# Copy the template to create your local config (gitignored)
+cp .cursor/mcp.json.template .cursor/mcp.json
+
+# Install Python dependencies for the memory server
+pip install -e ".[dev]"
 ```
 
-Use Playwright to screenshot and verify UI changes.
+### Agent Memory System
+
+The memory MCP server enables AI assistants to learn from corrections:
+
+1. **Capture**: When you correct the AI, it stores the learning as a YAML file in `.cursor/memory/`
+2. **Load**: At session start, relevant memories are scored and loaded as context
+3. **Reinforce**: Repeated corrections increase the reinforcement count
+4. **Promote**: After 3+ reinforcements, a memory becomes a "pattern candidate"
+5. **Apply**: Approved patterns are promoted directly into rule files
+
+Say **"reflect"** at session end to trigger learning capture. The `memory-flush.py` hook reminds you if you forget.
+
+All memory files are personal (gitignored) -- they stay on your machine.
 
 ## Customization
 

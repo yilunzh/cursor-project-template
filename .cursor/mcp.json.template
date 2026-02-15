@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "memory": {
+      "command": "PYTHONPATH=src python3",
+      "args": ["-m", "memory_mcp.server"],
+      "env": {}
+    }
+  }
+}

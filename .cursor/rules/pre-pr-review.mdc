@@ -1,0 +1,94 @@
+---
+description: "Self-review before creating a PR. Activates on: 'create PR', 'push', 'ready for review', 'open PR', 'commit and PR'."
+alwaysApply: false
+---
+
+# Pre-PR Self-Review
+
+Before creating a PR or pushing code for review, perform a self-review of all changes on the branch. This catches security issues, fragile patterns, and quality problems that automated tests miss -- the same class of issues that code reviewers (human or AI) would flag.
+
+## Step 1: Run Full Test Suite
+
+Run all tests for the project. All tests must pass. If any fail, fix before proceeding.
+
+## Step 2: Diff Review
+
+Read the full diff of the branch against main:
+
+```bash
+git diff main...HEAD
+```
+
+Review every changed file for these categories:
+
+### Security
+- **Path traversal**: Are file paths validated properly? Not using `str.startswith()` for path checks?
+- **Input validation**: Are user-provided values validated before use?
+- **Secrets**: Are there hardcoded tokens, passwords, or API keys?
+- **PII**: Are there email addresses, phone numbers, or names in test data or configs?
+
+### Defensive Coding
+- **Error handling**: Do functions that read/write files have try/except?
+- **Missing validation**: Are required function parameters checked before use?
+- **Null safety**: Are `.get()` calls used for optional dict keys?
+- **Timeout handling**: Do subprocess calls have timeout parameters?
+
+### Consistency
+- **Naming**: Do new functions follow existing naming conventions?
+- **Docstrings**: Do all public functions have docstrings?
+- **Import style**: Are imports consistent with existing patterns?
+- **Return types**: Are return types consistent with the codebase?
+
+### Fragility
+- **Shell safety**: Are environment values properly quoted?
+- **Path construction**: Are paths built with `Path /` operator (not string concatenation)?
+- **Hardcoded values**: Are there magic numbers or hardcoded paths?
+
+## Step 3: Cross-Reference Check
+
+For each **new function** added:
+- Does it have at least one test?
+- Is it exported/accessible where it needs to be?
+
+For each **deleted function**:
+- Is anything still importing it?
+- Are docs/rules still referencing it?
+
+For each **renamed module/function**:
+- Are all import paths updated?
+- Are all doc references updated?
+
+## Step 4: Present Findings
+
+Before proceeding with PR creation, present findings as a numbered list:
+
+```
+Pre-PR Self-Review:
+
+CRITICAL:
+  (none found)
+
+MODERATE:
+  1. utils.py:95 -- user input used in path construction without validation
+  2. README.md:42 -- says "handles X" but function was renamed to Y
+
+MINOR:
+  3. helpers.py:45 -- unused import
+
+Recommendation: Fix #1 and #2 before creating PR. #3 is low-risk.
+```
+
+If no issues found:
+```
+Pre-PR Self-Review: No issues found. Ready for PR.
+```
+
+## When to Skip
+
+- Typo-only commits (no code changes)
+- Documentation-only changes (no source files changed)
+- If the user explicitly says "skip review" (note this in the PR description)
+
+## Key Principle
+
+**Review your own work as if you were a skeptical code reviewer who doesn't trust AI-generated code.** Look for the issues that are easy to write but hard to catch: stale references, security shortcuts, fragile patterns, and missing edge cases.

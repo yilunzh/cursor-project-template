@@ -1,0 +1,45 @@
+---
+description: "Agent memory behavior rules. Activates when memory MCP tools are available."
+alwaysApply: false
+---
+
+# Agent Memory
+
+## When to Capture
+
+During any session:
+- When the user explicitly corrects you ("no, do it this way", "don't do that", "always do X"), call `capture_memory(type="correction", signal="explicit_correction", ...)`
+- When the user states a preference about output format, naming, or workflow, call `capture_memory(type="preference", signal="explicit_preference", ...)`
+- Set `scope` carefully: `universal` for always-applicable corrections, `domain` for domain-specific, `investigation` for this-session-only, `one_time` for context-specific corrections that shouldn't generalize
+
+## When to Load
+
+- At the start of a new task or investigation, call `load_relevant_memories(domain=<detected>)`
+- When first working with a new table or data source not yet used this session, call `load_relevant_memories(tables=<table_name>)`
+- When entering a new project phase, call `load_relevant_memories(phase=<phase_name>)` if the phase is different from the last load
+
+## How to Use Loaded Memories
+
+- Treat memories as supplementary context, not authoritative rules
+- If a memory contradicts a rule, follow the rule
+- When a memory influences your behavior, cite it inline: `[Memory: <memory-id>, <count>x]`
+- Keep citations compact -- one bracketed note, not a paragraph
+
+## Reflect Command
+
+When the user says **"reflect"**, **"session review"**, or **"capture learnings"**, run this full sequence immediately:
+
+1. **Extraction pass**: Review the entire conversation for corrections, preferences, and workflow insights not yet captured. Call `capture_memory()` for each one found. Be thorough -- scan from the beginning.
+2. **Reflection**: Call `capture_reflection()` with a retro -- what went well, what could improve, and any proposed behavioral change.
+3. **Learning review**: Call `learning_review()` to generate the session summary and any proposals.
+4. Present the review to the user.
+5. Wait for user response on any proposals.
+6. If user approves a proposal, call `apply_proposal()` with the approved details.
+
+This same sequence should also run before ending a session (before writing handoff).
+
+## Memory Hierarchy
+
+1. Rules (highest authority) -- always follow
+2. Memory corrections -- trust as personal behavioral guidance
+3. Memory preferences -- apply for style/format, not analysis decisions

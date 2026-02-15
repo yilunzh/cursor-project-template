@@ -16,6 +16,9 @@
     "stop": [
       {
         "command": "CLAUDE_HOOK_TYPE=Stop python3 .cursor/hooks/implementation-plan-check.py"
+      },
+      {
+        "command": "python3 .cursor/hooks/memory-flush.py"
       }
     ]
   }

@@ -24,6 +24,13 @@ Before merging any PR:
 2. Wait for checks to complete — do NOT merge while checks are "in progress"
 3. If CI fails — fix issues in the branch, push, wait for CI again
 
+### Pre-Implementation Checklist
+
+Before writing ANY implementation code in a session:
+
+1. **Verify branch**: Run `git branch --show-current` and confirm it matches the feature being built
+2. **Create branch if needed**: If on the wrong branch or main, create the correct feature branch first
+
 ### Phase 1: CLARIFY FIRST
 
 Before writing implementation code:
@@ -34,6 +41,7 @@ Before writing implementation code:
    - User-facing text (error messages, labels)
    - Edge cases
    - Scope boundaries
+   - For structural changes, identify analogous items that need the same treatment
 3. **Wait for answers** - Don't assume
 
 For UI features, also clarify: design inspiration, visual style, component library preference.
@@ -51,6 +59,15 @@ Proceed autonomously:
 1. Make incremental changes
 2. Run related tests after each change
 3. Fix failures immediately
+
+#### Multi-Phase Execution
+
+When an implementation plan has multiple phases:
+1. Create ONE plan covering all phases
+2. Get user confirmation ONCE
+3. Execute sequentially without pausing between phases
+4. At each phase boundary, run tests then immediately continue
+5. Only pause if tests fail
 
 #### Context Checkpoints
 
@@ -76,6 +93,14 @@ What we're trying to accomplish
 All four sections are required. Update proactively — don't wait to be asked.
 
 For multi-session work, write `.cursor/handoff.md` before ending with the same sections. Resume with "continue from handoff".
+
+### Phase 3b: POST-IMPLEMENTATION CHECK
+
+After completing implementation and before claiming done, run the post-implementation checklist proactively:
+1. **Doc alignment** -- verify rules/README/AGENTS.md still match the code
+2. **Dead code scan** -- check for functions defined but never called
+3. **Import consistency** -- no references to deleted/renamed modules
+4. **Gitignore compliance** -- no tracked files that should be ignored
 
 ### Phase 4: VERIFY
 
@@ -145,15 +170,53 @@ The `implementation-plan-check.py` hook will remind you if you modify code for a
 - Performance optimizations
 - Code organization
 
+## Agent Memory System
+
+The template includes a self-improving memory system that captures behavioral learnings and gets better over time:
+
+- **Corrections**: When the user corrects the agent, capture it so the same mistake isn't repeated
+- **Preferences**: Output format, naming conventions, workflow preferences
+- **Patterns**: Recurring behaviors that should be promoted to rules
+
+Memory files live in `.cursor/memory/` (gitignored -- personal to each developer).
+
+### Memory Lifecycle
+
+1. **Capture**: Agent records corrections/preferences as YAML files
+2. **Load**: At session start, relevant memories are scored and loaded as context
+3. **Reinforce**: When the same correction recurs, reinforcement count increases
+4. **Promote**: After 3+ reinforcements, a memory becomes a "pattern candidate"
+5. **Apply**: User can approve promoting a pattern to a rule file via `apply_proposal`
+6. **Expire**: Unused memories decay after 60 days and are deleted after 90 days
+
+### Setup
+
+The memory MCP server is configured in `.cursor/mcp.json`. Copy from `.cursor/mcp.json.template`:
+
+```bash
+cp .cursor/mcp.json.template .cursor/mcp.json
+```
+
+Install Python dependencies:
+```bash
+pip install -e ".[dev]"
+```
+
+### Key Commands
+
+- Say **"reflect"** or **"session review"** to trigger learning capture at session end
+- The `memory-flush.py` hook reminds you if no learnings were captured before ending
+
 ## Quality Enforcement
 
 This project uses multiple quality mechanisms:
 
-- **Git hooks (Husky)**: Pre-commit hook runs tests and lint before each commit
-- **Cursor CLI hooks**: Auto-format after edits, implementation plan reminders
+- **Git hooks (Husky)**: Pre-commit hook runs tests, lint, and secrets check before each commit
+- **Cursor CLI hooks**: Auto-format after edits, implementation plan reminders, memory flush reminders
 - **Branch protection**: Pre-commit hook blocks direct commits to main branch
 - **Language-agnostic**: Hooks auto-detect Python, Node.js, Rust, Go
-- **Cursor rules**: `.cursor/rules/` contains workflow, context management, TDD, and design review rules
+- **Memory MCP server**: Captures behavioral learnings and promotes patterns to rules
+- **Cursor rules**: `.cursor/rules/` contains workflow, context management, TDD, design review, memory, and quality rules
 
 To set up hooks after cloning:
 ```bash
@@ -190,11 +253,14 @@ The `.cursor/rules/` directory contains AI-specific rules:
 |------|---------|---------|
 | `workflow.mdc` | Always applied | Core development workflow, branching, verification |
 | `context-management.mdc` | Always applied | Session checkpoints, handoff, completion checks |
+| `post-implementation.mdc` | Description-triggered | Doc alignment, dead code, import/gitignore checks |
+| `pre-pr-review.mdc` | Description-triggered | Security, defensive coding, consistency review |
 | `test-first.mdc` | Description-triggered | TDD workflow for new features |
 | `design-review.mdc` | Description-triggered | UI/UX design review framework |
 | `commit-push-pr.mdc` | Description-triggered | Commit, push, and create PR workflow |
 | `test-and-commit.mdc` | Description-triggered | Run tests then commit if passing |
 | `web-verify.mdc` | Description-triggered | Playwright route verification |
+| `memory.mdc` | Description-triggered | Agent memory capture, load, and learning review |
 
 ## Cursor CLI Hooks
 
@@ -204,5 +270,6 @@ The `.cursor/hooks/` directory contains hook scripts:
 |------|---------|---------|
 | `auto-format.py` | After file edit | Auto-format Python files with black/isort |
 | `implementation-plan-check.py` | Pre-commit, session end | Remind to update implementation plans |
+| `memory-flush.py` | Session end | Remind to capture session learnings |
 
 Hooks are configured in `.cursor/hooks.json`.
