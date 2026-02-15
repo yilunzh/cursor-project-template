@@ -951,6 +951,52 @@ class TestApplyProposal:
         assert before == after
 
 
+class TestApplyProposalValidation:
+    """Tests for apply_proposal input validation branches."""
+
+    def test_apply_invalid_scope(self, tmp_memory, monkeypatch):
+        import memory_mcp.tools.memory as memory_mod
+        monkeypatch.setattr(memory_mod, "get_project_root", lambda: tmp_memory)
+
+        result = apply_proposal(
+            memory_id="correction-test",
+            target_file=".cursor/rules/test.mdc",
+            action="append",
+            content="test",
+            scope="bad_scope",
+        )
+        assert "Error" in result
+        assert "Invalid scope" in result
+
+    def test_apply_invalid_action(self, tmp_memory, monkeypatch):
+        import memory_mcp.tools.memory as memory_mod
+        monkeypatch.setattr(memory_mod, "get_project_root", lambda: tmp_memory)
+
+        result = apply_proposal(
+            memory_id="correction-test",
+            target_file=".cursor/rules/test.mdc",
+            action="delete",
+            content="test",
+            scope="personal",
+        )
+        assert "Error" in result
+        assert "Invalid action" in result
+
+    def test_apply_absolute_path_rejected(self, tmp_memory, monkeypatch):
+        import memory_mcp.tools.memory as memory_mod
+        monkeypatch.setattr(memory_mod, "get_project_root", lambda: tmp_memory)
+
+        result = apply_proposal(
+            memory_id="correction-test",
+            target_file="/etc/passwd",
+            action="append",
+            content="test",
+            scope="personal",
+        )
+        assert "Error" in result
+        assert "relative path" in result
+
+
 class TestRollback:
     def _create_memory(self, tmp_memory, **overrides):
         """Helper to write a memory YAML file directly."""
@@ -1060,6 +1106,125 @@ class TestRollback:
                 data = yaml.safe_load(fh)
             if data.get("id") == "correction-rollback-test":
                 assert data["status"] == "reverted"
+
+
+class TestRollbackEdgeCases:
+    """Edge cases for the remove/rollback action in _apply_change_to_file."""
+
+    def _create_memory(self, tmp_memory, **overrides):
+        defaults = {
+            "id": "correction-test", "type": "correction", "signal": "explicit_correction",
+            "summary": "Test", "detail": None, "domain": "billing", "tables": [],
+            "phase": "all", "scope": "universal", "times_reinforced": 3,
+            "first_seen": date.today().isoformat(), "last_seen": date.today().isoformat(),
+            "source_sessions": [], "status": "promoted", "promoted_to": None,
+            "superseded_by": None,
+        }
+        defaults.update(overrides)
+        type_dir = tmp_memory / ".cursor" / "memory" / f"{defaults['type']}s"
+        slug = defaults["id"].replace(f"{defaults['type']}-", "")
+        filepath = type_dir / f"{slug}.yaml"
+        suffix = 2
+        while filepath.exists():
+            filepath = type_dir / f"{slug}-{suffix}.yaml"
+            suffix += 1
+        with open(filepath, "w") as f:
+            yaml.dump(defaults, f, default_flow_style=False, sort_keys=False)
+        return filepath
+
+    def test_rollback_marker_not_found(self, tmp_memory, monkeypatch):
+        """Rollback should fail gracefully if provenance marker is missing."""
+        import memory_mcp.tools.memory as memory_mod
+        monkeypatch.setattr(memory_mod, "get_project_root", lambda: tmp_memory)
+
+        rules_dir = tmp_memory / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True, exist_ok=True)
+        rule_file = rules_dir / "test-rule.mdc"
+        rule_file.write_text("# Test Rule\n\nExisting content only.\n")
+
+        self._create_memory(
+            tmp_memory, id="correction-no-marker",
+            promoted_to=".cursor/rules/test-rule.mdc",
+        )
+
+        result = apply_proposal(
+            memory_id="correction-no-marker",
+            target_file=".cursor/rules/test-rule.mdc",
+            action="remove",
+            content="Some promoted text.",
+            scope="personal",
+        )
+        assert "Could not find provenance marker" in result
+
+        # File should be unchanged
+        assert rule_file.read_text() == "# Test Rule\n\nExisting content only.\n"
+
+    def test_rollback_content_not_found(self, tmp_memory, monkeypatch):
+        """Rollback should fail if marker exists but content block doesn't match."""
+        import memory_mcp.tools.memory as memory_mod
+        monkeypatch.setattr(memory_mod, "get_project_root", lambda: tmp_memory)
+
+        rules_dir = tmp_memory / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True, exist_ok=True)
+        rule_file = rules_dir / "test-rule.mdc"
+        today = date.today().isoformat()
+        # Marker exists but the content we're looking for isn't in the file
+        rule_file.write_text(
+            "# Test Rule\n\nDifferent promoted text.\n\n"
+            f"<!-- Memory-promoted: {today}, source: correction-wrong-content, evidence: 3x reinforced -->\n"
+        )
+
+        self._create_memory(
+            tmp_memory, id="correction-wrong-content",
+            promoted_to=".cursor/rules/test-rule.mdc",
+        )
+
+        result = apply_proposal(
+            memory_id="correction-wrong-content",
+            target_file=".cursor/rules/test-rule.mdc",
+            action="remove",
+            content="This text is NOT in the file.",
+            scope="personal",
+        )
+        assert "Could not locate promoted content block" in result
+
+    def test_rollback_multiline_content(self, tmp_memory, monkeypatch):
+        """Rollback should handle multi-line promoted content correctly."""
+        import memory_mcp.tools.memory as memory_mod
+        monkeypatch.setattr(memory_mod, "get_project_root", lambda: tmp_memory)
+
+        rules_dir = tmp_memory / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True, exist_ok=True)
+        rule_file = rules_dir / "test-rule.mdc"
+        today = date.today().isoformat()
+        rule_file.write_text(
+            "# Test Rule\n\nExisting content.\n\n"
+            "## Multi-Line Promotion\n\n"
+            "Line one of promoted content.\n"
+            "Line two of promoted content.\n"
+            "Line three of promoted content.\n\n"
+            f"<!-- Memory-promoted: {today}, source: correction-multiline, evidence: 3x reinforced -->\n"
+        )
+
+        self._create_memory(
+            tmp_memory, id="correction-multiline",
+            promoted_to=".cursor/rules/test-rule.mdc",
+        )
+
+        result = apply_proposal(
+            memory_id="correction-multiline",
+            target_file=".cursor/rules/test-rule.mdc",
+            action="remove",
+            content="## Multi-Line Promotion\n\nLine one of promoted content.\nLine two of promoted content.\nLine three of promoted content.",
+            scope="personal",
+        )
+        assert "Rolled back" in result or "Removed" in result
+
+        content = rule_file.read_text()
+        assert "Line one of promoted content" not in content
+        assert "Line two of promoted content" not in content
+        assert "Existing content." in content
+        assert "Reverted" in content
 
 
 # =====================================================================
